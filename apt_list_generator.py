@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+import apt_pkg
+import io
 import urllib.request
 import html.parser
 
-class DistroFinder(html.parser.HTMLParser):
+class SuiteFinder(html.parser.HTMLParser):
     def __init__(self, repository_url):
         super().__init__()
         self._repository_url = repository_url
@@ -20,6 +22,20 @@ class DistroFinder(html.parser.HTMLParser):
          if tag == 'a':
              self._distro_names += (value[:-1] for name, value in attributes if name == "href" and value[0].islower())
 
+class ComponentFinder():
+    def __init__(self, repository_url, suite):
+        self._repository_url = repository_url
+        self._suite = suite
 
-df = DistroFinder("http://archive.ubuntu.com/ubuntu")
+    def get(self):
+        with urllib.request.urlopen(f"{self._repository_url}/dists/{self._suite}/Release") as response:
+            with apt_pkg.TagFile(response.read().decode('utf-8')) as tf:
+                tf.step()
+                print(tf.section['Components'])
+
+
+
+df = SuiteFinder("http://archive.ubuntu.com/ubuntu")
 print(df.get())
+cf = ComponentFinder("http://archive.ubuntu.com/ubuntu","bionic")
+cf.get()
